@@ -309,5 +309,15 @@
 			<artifactId>imglib2-ij</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>net.haesleinhuepf</groupId>
+			<artifactId>clij_</artifactId>
+			<version>0.15.1</version>
+		</dependency>
+		<dependency>
+			<groupId>net.haesleinhuepf</groupId>
+			<artifactId>clij_custom_convolution_plugin</artifactId>
+			<version>0.2.0</version>
+		</dependency>
 	</dependencies>
 </project>

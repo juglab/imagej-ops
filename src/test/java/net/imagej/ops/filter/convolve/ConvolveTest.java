@@ -32,9 +32,12 @@ package net.imagej.ops.filter.convolve;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
+import net.haesleinhuepf.clij.CLIJ;
+import net.haesleinhuepf.clij.clearcl.ClearCLBuffer;
 import net.imagej.ops.AbstractOpTest;
 import net.imagej.ops.Op;
 import net.imagej.ops.Ops;
+import net.imagej.ops.Ops.Filter.Convolve;
 import net.imagej.ops.filter.fft.CreateOutputFFTMethods;
 import net.imagej.ops.filter.pad.PadInputFFTMethods;
 import net.imagej.ops.filter.pad.PadShiftKernelFFTMethods;
@@ -280,6 +283,48 @@ public class ConvolveTest extends AbstractOpTest {
 		assertEquals(max.getRealDouble(), 3.155, 0.001);
 		assertEquals(min.getRealDouble(), 2.978E-7, 0.001);
 
+	}
+	
+	@Test
+	public void testConvolveCLIJ() {
+		final int xSize = 128;
+		final int ySize = 128;
+		final int zSize = 128;
+
+		final int[] size = new int[] { xSize, ySize, zSize };
+
+		final Img<DoubleType> phantom = ops.create().img(size);
+
+		final RandomAccess<DoubleType> randomAccess = phantom.randomAccess();
+
+		randomAccess.setPosition(new long[] { xSize / 2, ySize / 2, zSize / 2 });
+		randomAccess.get().setReal(255.0);
+
+		randomAccess.setPosition(new long[] { xSize / 4, ySize / 4, zSize / 4 });
+		randomAccess.get().setReal(255.0);
+
+		final Point location = new Point(phantom.numDimensions());
+		location.setPosition(new long[] { 3 * xSize / 4, 3 * ySize / 4, 3 * zSize /
+			4 });
+
+		final HyperSphere<DoubleType> hyperSphere = new HyperSphere<>(phantom, location,
+			5);
+
+		for (DoubleType value : hyperSphere) {
+			value.setReal(16);
+		}
+
+		// create psf using the gaussian kernel op (alternatively PSF could be an
+		// input to the script)
+		final RandomAccessibleInterval<DoubleType> psf = ops.create().kernelGauss(
+			new double[] { 5, 5, 5 }, new DoubleType());
+		
+		final CLIJ clij = CLIJ.getInstance();
+		final ClearCLBuffer input = clij.convert(phantom, ClearCLBuffer.class);
+		final ClearCLBuffer kernel = clij.convert(psf, ClearCLBuffer.class);
+		final ClearCLBuffer output = clij.convert(phantom.factory().create(phantom), ClearCLBuffer.class);
+		
+		ops.run(Convolve.class, output, input, kernel);
 	}
 
 }
